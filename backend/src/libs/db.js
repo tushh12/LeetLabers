@@ -1,8 +1,9 @@
 
-import { PrismaClient } from "@prisma/client";
+import pkg from "@prisma/client";
+const {PrismaClient} = pkg;
 import { Pool } from "pg";
 import { PrismaPg } from "@prisma/adapter-pg";
-import "dotenv/config"; // Ensures we can read the .env file
+import "dotenv/config"; // for  read the .env file
 
 // 1. Create a native Postgres connection pool
 const connectionString = process.env.DATABASE_URL;
