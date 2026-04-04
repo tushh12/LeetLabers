@@ -10,11 +10,13 @@ export const getJudge0LanguageId = (language) => {
 }
 
 const sleep = (ms) => new Promise((resolve) => setTimeout(resolve,ms))
-export const pollBatchResults = async(token) => {
-    while(true){
+export const pollBatchResults = async(tokens) => {
+    let attempts = 0;
+    let maximumattempts = 20;
+    while(attempts < maximumattempts){
         const {data} = await axios.get(`${process.env.JUDGE0_API_URI}/submissions/batch`,{
             params:{
-                token:token.join(","),
+                tokens:tokens.join(","),
                 base64_encoded:false,
             }
         })
@@ -24,10 +26,12 @@ export const pollBatchResults = async(token) => {
         )
         if(isAllDone) return results
         await sleep(1000) //  1 second
+        attempts++;
     }
+    throw new Error ("judge0 took long to respond")
 }
 export const submitBatch = async (submissions)=> {
-    const {data} = await axios.post(`${process.env.JUDGE0_API_URI}/submissions/batch?batch64_encoded=false`,{
+    const {data} = await axios.post(`${process.env.JUDGE0_API_URI}/submissions/batch?base64_encoded=false`,{
         submissions
     })
     console.log("submission result",data);
