@@ -9,9 +9,9 @@ export const createProblem = async (req,res) => {
     try {
         for(const [language,solutionCode] of Object.entries(referenceSolutions)){
             const languageId = getJudge0LanguageId(language);
-            if(!languageId)
+            if(!languageId){
                 return res.status(400).json({error :`Language ${language} is not supported`});
-        
+            }
         const submissons = testcases.map(({input,output}) => ({
             source_code:solutionCode,
             language_id:languageId,
@@ -19,7 +19,7 @@ export const createProblem = async (req,res) => {
             expected_output:output,
         }))
         const submissonsResults = await submitBatch(submissons);
-        const tokens = submissonsResults.map((res) => res.tokens);
+        const tokens = submissonsResults.map((res) => res.token);
         const results = await pollBatchResults(tokens);
         for(let i=0;i<results.length;i++){
             const result = results[i];
@@ -47,7 +47,7 @@ export const createProblem = async (req,res) => {
     });
     return res.status(201).json({
         sucess:true,
-        message:"Message created successfully",
+        message:"Problem created successfully",
         problem: newProblem,
     })
    } catch(error){
@@ -57,7 +57,7 @@ export const createProblem = async (req,res) => {
     });    
    }
 
-}
+};
 export const getAllProblem = async (req,res) => {
      try {
         const problems = await db.Problem.findMany({
@@ -90,7 +90,7 @@ export const getAllProblem = async (req,res) => {
 export const getProblemByid = async (req,res) => {
      const {id} = req.params;
      try {
-        const problemByid = await db.Problem.findUnique({
+        const problem = await db.Problem.findUnique({
             where:{
                 id,
             },
@@ -101,7 +101,7 @@ export const getProblemByid = async (req,res) => {
         return res.status(200).json({
             sucess:true,
             message:"get problem by id",
-            problemByid
+            problem
         })
      } catch (error) {
         console.log("error-",error);        
@@ -109,4 +109,66 @@ export const getProblemByid = async (req,res) => {
             error:"Error while getting problem by id"
         })
      }
-}
+};
+export const updateProblem = async (req,res) => {
+    const {id} = req.params;
+    const {
+        title,description,difficulty,tags,examples,constraints,testcases,codeSnippets,referenceSolutions
+    }  = req.body;
+    try {
+       for(const [language,solutionCode] of Object.entries(referenceSolutions)){
+        const languageId = getJudge0LanguageId(language);
+        if(!languageId){
+            return res.status(400).json({
+                error:`Language ${language} is not supported`
+            });
+        }
+        const submissions = testcases.map(({input,output}) => ({
+            source_code:solutionCode,
+            language_id:languageId,
+            stdin:input,
+            expected_output:output
+       }))
+       const submissonsResults = await submitBatch(submissions);
+       const tokens = submissonsResults.map((res) => res.tokens);
+       const results = await pollBatchResults(tokens);
+       for(let i=0;i<results.length;i++){
+        const result = results[i];
+        console.log("Result-",result);
+        if(result.status.id !== 3){
+            return res.status(400).json({
+                error:`Testcase ${i+1} failed for language ${language}`,
+            });
+        }        
+       }        
+    }
+    const updatedProblem = await db.Problem.update({
+        where:{
+           id:id
+        },
+        data:{
+             title,
+           description,
+           difficulty,
+           tags,
+           examples,
+           constraints,
+           testcases,
+           codeSnippets,
+           referenceSolutions,
+           userId: req.user.id, 
+           problemId:req.Problem.id,
+        }
+    });
+    return res.status(200).json({
+        sucess:true,
+        message:"Problem created successfully",
+        problem:updatedProblem,
+    })
+   } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            error:"error while creating problem"
+        })        
+    }
+};
