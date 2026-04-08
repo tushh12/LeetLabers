@@ -58,3 +58,32 @@ export const createProblem = async (req,res) => {
    }
 
 }
+export const getAllProblem = async (req,res) => {
+     try {
+        const problems = await db.problem.findMany({
+            include : {
+                solvedBy:{
+                    where:{
+                        userId:req.user.id
+                    }
+                }
+            }
+        });
+        if(!problems){
+            res.status(404).json({
+                message:"No problems found"
+            })
+        }
+        res.status(200).json({
+            sucess:true,
+            message:"All Problem fetched successfully",
+            problem:problems
+        })
+     } catch (error) {
+        console.error(error);
+        // why we here have to put return here 
+        return res.status(500).json({
+            error:"Error while fetching problem"
+        })        
+     }
+};
