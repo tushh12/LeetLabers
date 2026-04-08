@@ -31,7 +31,7 @@ export const createProblem = async (req,res) => {
             }
         }
     }
-    const newProblem = await db.problem.create({
+    const newProblem = await db.Problem.create({
         data:{
            title,
            description,
@@ -60,7 +60,7 @@ export const createProblem = async (req,res) => {
 }
 export const getAllProblem = async (req,res) => {
      try {
-        const problems = await db.problem.findMany({
+        const problems = await db.Problem.findMany({
             include : {
                 solvedBy:{
                     where:{
@@ -87,3 +87,26 @@ export const getAllProblem = async (req,res) => {
         })        
      }
 };
+export const getProblemByid = async (req,res) => {
+     const {id} = req.params;
+     try {
+        const problemByid = await db.Problem.findUnique({
+            where:{
+                id,
+            },
+        });
+        if(!problem){
+            return res.status(403).json({error:"problem not found."});
+        }
+        return res.status(200).json({
+            sucess:true,
+            message:"get problem by id",
+            problemByid
+        })
+     } catch (error) {
+        console.log("error-",error);        
+        return res.status(500).json({            
+            error:"Error while getting problem by id"
+        })
+     }
+}
