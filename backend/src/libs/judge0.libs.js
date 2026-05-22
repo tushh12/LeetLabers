@@ -18,7 +18,10 @@ export const pollBatchResults = async(tokens) => {
             params:{
                 tokens:tokens.join(","),
                 base64_encoded:false,
-            }
+            } , 
+            headers:{
+                'Connection' : 'close'
+            },
         })
         const results = data.submissions;
         const isAllDone = results.every(
@@ -33,6 +36,10 @@ export const pollBatchResults = async(tokens) => {
 export const submitBatch = async (submissions)=> {
     const {data} = await axios.post(`${process.env.JUDGE0_API_URI}/submissions/batch?base64_encoded=false`,{
         submissions
+    } , {
+        headers:{
+            'Connection':'close'
+        }
     })
     console.log("submission result",data);
     return data     

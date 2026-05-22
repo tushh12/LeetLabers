@@ -1,5 +1,23 @@
 import { db } from "../libs/db.js";
-import { getLanguageName, pollBatchResults, submitBatch } from "../libs/judge0.libs.js";
+import axios from "axios";
+
+// 1. Language Bridge (Translates Judge0 IDs or Strings to JDoodle format)
+const mapLanguageIdToJDoodle = (idOrName) => {
+    const map = {
+        // If frontend sends strings
+        'javascript': { language: 'nodejs', versionIndex: '0', name: 'JavaScript' },
+        'python': { language: 'python3', versionIndex: '3', name: 'Python' },
+        'cpp': { language: 'cpp17', versionIndex: '0', name: 'C++' },
+        'java': { language: 'java', versionIndex: '3', name: 'Java' },
+        
+        // If frontend sends Judge0 IDs
+        63: { language: 'nodejs', versionIndex: '0', name: 'JavaScript' }, // JS
+        71: { language: 'python3', versionIndex: '3', name: 'Python' },     // Python
+        54: { language: 'cpp17', versionIndex: '0', name: 'C++' },         // C++
+        62: { language: 'java', versionIndex: '3', name: 'Java' }          // Java
+    };
+    return map[String(idOrName).toLowerCase()] || null;
+};
 
 export const executeCode = async (req, res) => {
     try {
@@ -16,26 +34,59 @@ export const executeCode = async (req, res) => {
             return res.status(400).json({ error: "Invalid or missing test cases" });
         }
 
-        // 2. Prepare and send batch to Judge0
-        const submissions = stdin.map((input) => ({
-            source_code,
-            language_id,
-            stdin: input,
-        }));
+        const jdoodleConfig = mapLanguageIdToJDoodle(language_id);
+        if (!jdoodleConfig) {
+            return res.status(400).json({ error: "Unsupported language ID" });
+        }
+
+        const clientId = process.env.JDOODLE_CLIENT_ID;
+        const clientSecret = process.env.JDOODLE_CLIENT_SECRET;
+
+        // 2. Prepare and send batch to JDoodle (with Infinite Loop Protection)
+        const executionPromises = stdin.map(async (input) => {
+            try {
+                const response = await axios.post('https://api.jdoodle.com/v1/execute', {
+                    script: source_code,
+                    language: jdoodleConfig.language,
+                    versionIndex: jdoodleConfig.versionIndex,
+                    stdin: input,
+                    clientId: clientId,
+                    clientSecret: clientSecret
+                }, { timeout: 10000 }); // 10-second kill switch
+
+                return { success: true, data: response.data };
+            } catch (error) {
+                // If it times out or fails, catch it so Promise.all doesn't explode
+                return { success: false, error: "Time Limit Exceeded" };
+            }
+        });
         
-        const submitResponse = await submitBatch(submissions);
-        const tokens = submitResponse.map((res) => res.token);
-
-        // 3. Poll Judge0 until all executions are complete
-        const results = await pollBatchResults(tokens);
-        console.log("Result-----", results);
-
+        const results = await Promise.all(executionPromises);
         let allPassed = true;
 
-        // 4. Grade the results
-        const detailedResults = results.map((result, i) => {
-            const stdout = result.stdout?.trim();
-            const expected_output = expected_outputs[i]?.trim();
+        // 3. Grade the results
+        const detailedResults = results.map((resultObj, i) => {
+            const expected_output = (expected_outputs[i] || "").trim();
+
+            // Handle Timeouts or Execution Failures
+            if (!resultObj.success) {
+                allPassed = false;
+                return {
+                    testcase: i + 1,
+                    passed: false,
+                    stdout: null,
+                    expected: expected_output,
+                    stderr: resultObj.error,
+                    compileOutput: null,
+                    status: "Time Limit Exceeded",
+                    memory: undefined,
+                    time: undefined,
+                };
+            }
+
+            // Handle Successful Executions
+            const data = resultObj.data;
+            const stdout = (data.output || "").trim(); 
             const passed = stdout === expected_output;
             
             if (!passed) {
@@ -47,21 +98,22 @@ export const executeCode = async (req, res) => {
                 passed,
                 stdout,
                 expected: expected_output,
-                stderr: result.stderr || null,
-                compileOutput: result.compile_output || null,
-                status: result.status.description,
-                memory: result.memory ? `${result.memory} KB` : undefined,
-                time: result.time ? `${result.time} s` : undefined,
+                // JDoodle mixes stderr and compile errors into the 'output' field if the code crashes
+                stderr: passed ? null : (data.error || null), 
+                compileOutput: null, 
+                status: passed ? "Accepted" : "Wrong Answer",
+                memory: data.memory ? `${data.memory} KB` : undefined,
+                time: data.cpuTime ? `${data.cpuTime} s` : undefined,
             };
         });       
         
-        // 5. Save the Master Submission
+        // 4. Save the Master Submission
         const submission = await db.submission.create({
             data: {
                 userId,
                 problemId,
                 sourceCode: source_code,
-                language: getLanguageName(language_id),
+                language: jdoodleConfig.name, // Saved cleanly as "JavaScript", "Python", etc.
                 stdin: stdin.join("\n"),
                 stdout: JSON.stringify(detailedResults.map((r) => r.stdout)),
                 status: allPassed ? "Accepted" : "Failed",
@@ -77,7 +129,7 @@ export const executeCode = async (req, res) => {
             },
         });
 
-        // 6. Mark Problem as Solved (Only triggers if 100% of test cases passed)
+        // 5. Mark Problem as Solved (Only triggers if 100% of test cases passed)
         if (allPassed) {
             await db.problemSolved.upsert({
                 where: {
@@ -94,7 +146,7 @@ export const executeCode = async (req, res) => {
             });
         }
 
-        // 7. Save Individual Test Case Results
+        // 6. Save Individual Test Case Results
         const testCaseResults = detailedResults.map((result) => ({
             submissionId: submission.id,
             testcase: result.testcase, 
@@ -112,7 +164,7 @@ export const executeCode = async (req, res) => {
             data: testCaseResults,
         });
 
-        // 8. Fetch the final package to send to the frontend
+        // 7. Fetch the final package to send to the frontend
         const submissionWithTestCases = await db.submission.findUnique({
             where: {
                 id: submission.id

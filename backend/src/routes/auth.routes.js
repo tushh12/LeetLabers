@@ -1,13 +1,13 @@
 import express from "express"
 import { check, login, logout, register } from "../controllers/auth.controllers.js";
-
+import {authMiddleware,checkAdmin} from  "../middleware/auth.middeware.js";
 
 const authRoutes = express.Router();
 
 authRoutes.post("/register",register);
 authRoutes.post("/login",login);
-authRoutes.post("/logout",logout);
-authRoutes.get("/check",check);
+authRoutes.post("/logout",authMiddleware,logout);
+authRoutes.get("/check",authMiddleware,check);
 
 
 
