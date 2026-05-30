@@ -31,9 +31,9 @@ export const register = async (req,res) => {
     })
     res.cookie("jwt",token,{
         httpOnly : true,
-        sameSite:"strict",
-        secure:process.env.NODE_ENV !== "devlopment",
-        maxAge : 1000 * 60 * 24 * 7 // 7 days
+        sameSite:"lax",
+        secure:process.env.NODE_ENV === "production",
+        maxAge : 1000 * 60 *  60 * 24 * 7 // 7 days
     })
     res.status(201).json({
         success: true,

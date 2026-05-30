@@ -1,48 +1,60 @@
 import {create} from "zustand"
-import axios from "axios"
-
-const API_URL="http://localhost:8080/api/v1/auth";
+import { axiosInstance } from "../lib/axios"
 
 export const useAuthStore = create((set) => ({
-        token:localStorage.getItem('token') || null,
-        isLoading:false,
-        error:null,
-    signup: async(name,email,password) => {
-        set({isLoading:true , error:null});
-        try {
-            const response = await axios.post(`${API_URL}/register`, {name,email,password});
-            const token = response.data.token;
+    authUser:null,
+    isLoading:false,
+    isCheckingAuth:true,
+    error:null,
 
-            localStorage.setItem("token",token);
-            set({token:token , isLoading:false});
+    checkAuth: async() => {
+        set({isCheckingAuth:true})
+        try {
+            const res = await axiosInstance.get("/auth/check");
+            set({authUser:res.data.user});
+            console.log("checkauth response",res.data);            
+        } catch (error) {
+            console.log("Error checking auth --->",error);            
+            set({authUser:null , isCheckingAuth:false});
+        } finally {
+            set({isCheckingAuth:false})
+        }
+    },
+    singup: async(name,email,password) => {
+        set({isLoading:true,error:null});
+        try {
+            const response = await axiosInstance.post("/auth/register",{name,email,password});
+            set({authUser:response.data.user , isLoading:false});
             return true;
-        } catch(error){
+        } catch (error) {
             set({
-                error:error.response?.data?.error || "Signup failed.",
+                error:error.response?.data?.error ||  "Signup failed",
                 isLoading:false
             });
-            return false;
+         return false;  
         }
     },
     login:async(email,password) => {
         set({isLoading:true,error:null});
         try {
-            const response = await axios.post(`${API_URL}/login`,{email,password});
-            const token =  response.data.token;
-
-            localStorage.setItem('token',token);
-            set({token:token,isLoading:false});
+            const response = await axiosInstance.post("/auth/login",{email,password});
+            set({authUser:response.data.user ,isLoading:false});
             return true;
         } catch(error){
             set({
-                error:error.response?.data?.error || "Login failed . Check credentials",
+                error:error.response?.data?.error || "Login failed .Check credentails",
                 isLoading:false
             });
             return false;
         }
     },
-    logout: () => {
-        localStorage.removeItem('token');
-        set({token:null})
-    }
-}));
+    logout: async () => {
+        try{
+            await axiosInstance.post("/auth/logout");
+            set({authUser:null});
+        } catch(error){
+            console.error("Logout execution errror",error);
+        }
+    },
+    
+}))

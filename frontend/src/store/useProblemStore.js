@@ -9,13 +9,13 @@ export const useProblemStore = create((set) => ({
     isProblemsLoading:false,
     isProblemLoading:false,
     getAllProblems : async() => {
+          set({isProblemLoading : true});
         try {
-            set({isProblemLoading : true});
             const res = await axiosInstance.get("/problems/get-all-problems");
-            set({problems:res.data.problems});
+            set({problems:res.data.problem});
         } catch(error){
-            console.log("Error getting all problems",error);
-            toast.error("Error in getting problems");            
+            console.error("Error getting all problems---->>>",error);
+            toast.error("Error in getting  allproblems");            
         } finally{
             set({isProblemLoading:false});
         }

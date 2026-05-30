@@ -4,7 +4,7 @@ export const createPlayList = async (req,res) => {
     try {
         const {name,description} = req.body;
         const userId = req.user.id;
-        const playList = await db.playList.create({
+        const playList = await db.Playlist.create({
             data:{
                 name,
                 description,
@@ -24,7 +24,7 @@ export const createPlayList = async (req,res) => {
 
 export const getPlayAllListDetails = async (req,res) => {
     try {
-        const playList = await db.playList.findMany({
+        const playList = await db.Playlist.findMany({
             where:{
                 userId:req.user.id,
             },
@@ -50,7 +50,7 @@ export const getPlayListDetails =  async(req,res) => {
     const {playListId} = req.params;
 
     try {
-        const playList = await db.playList.findUnique({
+        const playList = await db.Playlist.findUnique({
             where:{id:playListId,userId:req.user.id},
             include:{
                 problems:{
@@ -74,21 +74,24 @@ export const getPlayListDetails =  async(req,res) => {
     }
 } 
 export const addProblemToPlaylist = async(req,res) => {
-    const {playListId} = req.params;
+    const {playlistId} = req.params;
     const {problemIds} = req.body;
     try {
         if(!Array.isArray(problemIds) || problemIds.length == 0){
             return res.status(400).json({error:"Invalid or missing problemIds"})
         }
+        if(!playlistId){
+            return res.status(400).json({error:"Playlist id is missing"})
+        }
         console.log(
             problemIds.map((problemId) => ({
-                playListId,
+                playlistId,
                 problemId,
             }))
         );
-        const problemInPlaylist = await db.problemInPlaylist.createMany({
+        const problemInPlaylist = await db.ProblemInPlaylist.createMany({
             data: problemIds.map((problemId) => ({
-                playListId:playListId,
+                playListId:playlistId,
                 problemId,
             })),
         });
@@ -99,13 +102,13 @@ export const addProblemToPlaylist = async(req,res) => {
         });
     } catch (error) {
         console.error("error adding problem to playlist",error.message);
-        res.status(500).json({error:"failder to add problem to playlist"});
+        res.status(500).json({error:"failed to add problem to playlist"});
     }
 }
 export const deletePlaylist = async(req,res) => {
     const {playListId} = req.params;
     try {
-        const deletedplaylist = await db.playlist.delete({
+        const deletedplaylist = await db.Playlist.delete({
             where:{
                 id:playListId,
             },
@@ -128,9 +131,9 @@ export  const removeProblemFromPlaylist = async(req,res) => {
             return res.status(400).json({error:"Invalid or missing problemId"})
 
         }
-        const deletedProblem = await db.problemInPlaylist.deleteMany({
+        const deletedProblem = await db.ProblemInPlaylist.deleteMany({
             where:{
-                playlistId,
+                playListId,
                 problemId:{
                     in:problemIds,
                 },
