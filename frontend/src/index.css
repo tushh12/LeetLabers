@@ -4,3 +4,30 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+
+/* FORCE ROOT TO BE DARK - Add this below your tailwind imports */
+html, body, #root {
+  background-color: #030712 !important; /* This is the exact hex for bg-gray-950 */
+  min-h-screen: 100vh;
+  margin: 0;
+  padding: 0;
+}
+/* Drag Bars for Split Panes */
+.gutter {
+  background-color: transparent;
+  background-repeat: no-repeat;
+  background-position: 50%;
+  transition: background-color 0.2s ease;
+}
+.gutter:hover {
+  background-color: #3b82f6; /* Tailwind blue-500 */
+}
+.gutter.gutter-horizontal {
+  cursor: col-resize;
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAUAAAAeCAYAAADkftS9AAAAIklEQVQoU2M4c+bMfxAGAgYYmwGrIIiDjrELjpo5aiZeMwF+yNnOs5KSvgAAAABJRU5ErkJggg==');
+}
+.gutter.gutter-vertical {
+  cursor: row-resize;
+  background-image: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAB4AAAAFAQMAAABo7865AAAABlBMVEVHcEzMzMzyCB2iAAAAAXRSTlMAQObYZgAAABBJREFUeF5jOAMEEAIEEFBgAAWgAQKjH1uNAAAAAElFTkSuQmCC');
+}

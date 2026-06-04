@@ -1,152 +1,77 @@
 import { db } from "../libs/db.js";
-import axios from "axios"; // Make sure you ran `npm install axios`
+import { validateSolutionsAgainstTestcases } from "../services/compiler.service.js";
 
-// 1. JDoodle Language Mapper (Replaces getJudge0LanguageId)
-const mapLanguageToJDoodle = (lang) => {
-    const map = {
-        'javascript': { language: 'nodejs', versionIndex: '0' },
-        'python': { language: 'python3', versionIndex: '3' },
-        'cpp': { language: 'cpp17', versionIndex: '0' },
-        'java': { language: 'java', versionIndex: '3' }
-    };
-    return map[lang.toLowerCase()] || null;
-};
+// --- CONTROLLERS ---
 
 export const createProblem = async (req, res) => {
     const {
         title, description, difficulty, tags, examples, constraints,
-        testcases, codeSnippets, referenceSolutions
+        testcases, codeSnippets, referenceSolutions, driverCode // ✅ NEW: Added driverCode
     } = req.body;
 
-    const clientId = process.env.JDOODLE_CLIENT_ID;
-    const clientSecret = process.env.JDOODLE_CLIENT_SECRET;
-
     try {
-        // --- JDOODLE EXECUTION BLOCK ---
-        for (const [language, solutionCode] of Object.entries(referenceSolutions)) {
-            const jdoodleConfig = mapLanguageToJDoodle(language);
-            
-            if (!jdoodleConfig) {
-                return res.status(400).json({ error: `Language ${language} is not supported` });
-            }
-
-            const executionPromises = testcases.map((testcase) => {
-                return axios.post('https://api.jdoodle.com/v1/execute', {
-                    script: solutionCode,
-                    language: jdoodleConfig.language,
-                    versionIndex: jdoodleConfig.versionIndex,
-                    stdin: testcase.input,
-                    clientId: clientId,
-                    clientSecret: clientSecret
-                }, { timeout: 10000 }); // 10-second safety kill switch
-            });
-
-            const results = await Promise.all(executionPromises);
-
-            for (let i = 0; i < results.length; i++) {
-                const actualOutput = (results[i].data.output || '').trim();
-                const expectedOutput = (testcases[i].output || '').trim();
-
-                console.log(`Testcase ${i + 1} -> Expected: "${expectedOutput}", Actual: "${actualOutput}"`);
-
-                if (actualOutput !== expectedOutput) {
-                    return res.status(400).json({
-                        error: `Testcase ${i + 1} failed for language ${language}. Expected: ${expectedOutput}, Got: ${actualOutput}`
-                    });
-                }
-            }
-        }
-        // --- END JDOODLE BLOCK ---
+        // ✅ NEW: Pass driverCode to the validation function
+        await validateSolutionsAgainstTestcases(referenceSolutions, driverCode, testcases);
 
         const newProblem = await db.Problem.create({
             data: {
                 title, description, difficulty, tags, examples, constraints,
-                testcases, codeSnippets, referenceSolutions,
+                testcases, codeSnippets, referenceSolutions, 
+                driverCode, // ✅ NEW: Save it to the database
                 userId: req.user.id,
             },
         });
 
         return res.status(201).json({
-            sucess: true,
-            message: "Problem created successfully",
+            success: true, 
+            message: "Problem created and verified successfully! ⚡",
             problem: newProblem,
         });
+
     } catch (error) {
+        if (error.status === 400) {
+            return res.status(400).json({ error: error.message });
+        }
         console.log("error----->", error.response ? error.response.data : error.message);
-        return res.status(500).json({
-            error: "error while creating problem"
-        });
+        return res.status(500).json({ error: "Internal server error while creating problem" });
     }
 };
 
 export const updateProblem = async (req, res) => {
     const { id } = req.params;
     const {
-        title, description, difficulty, tags, examples, constraints, testcases, codeSnippets, referenceSolutions
+        title, description, difficulty, tags, examples, constraints, 
+        testcases, codeSnippets, referenceSolutions, driverCode // ✅ NEW: Added driverCode
     } = req.body;
 
-    const clientId = process.env.JDOODLE_CLIENT_ID;
-    const clientSecret = process.env.JDOODLE_CLIENT_SECRET;
-
     try {
-        // --- JDOODLE EXECUTION BLOCK ---
-        for (const [language, solutionCode] of Object.entries(referenceSolutions)) {
-            const jdoodleConfig = mapLanguageToJDoodle(language);
-            
-            if (!jdoodleConfig) {
-                return res.status(400).json({ error: `Language ${language} is not supported` });
-            }
-
-            const executionPromises = testcases.map((testcase) => {
-                return axios.post('https://api.jdoodle.com/v1/execute', {
-                    script: solutionCode,
-                    language: jdoodleConfig.language,
-                    versionIndex: jdoodleConfig.versionIndex,
-                    stdin: testcase.input,
-                    clientId: clientId,
-                    clientSecret: clientSecret
-                }, { timeout: 10000 }); 
-            });
-
-            const results = await Promise.all(executionPromises);
-
-            for (let i = 0; i < results.length; i++) {
-                const actualOutput = (results[i].data.output || '').trim();
-                const expectedOutput = (testcases[i].output || '').trim();
-
-                if (actualOutput !== expectedOutput) {
-                    return res.status(400).json({
-                        error: `Testcase ${i + 1} failed for language ${language}. Expected: ${expectedOutput}, Got: ${actualOutput}`
-                    });
-                }
-            }
-        }
-        // --- END JDOODLE BLOCK ---
+        // ✅ NEW: Pass driverCode to the validation function
+        await validateSolutionsAgainstTestcases(referenceSolutions, driverCode, testcases);
 
         const updatedProblem = await db.Problem.update({
             where: { id: id },
             data: {
                 title, description, difficulty, tags, examples, constraints,
-                testcases, codeSnippets, referenceSolutions,
+                testcases, codeSnippets, referenceSolutions, 
+                driverCode, // ✅ NEW: Save updated code to database
                 userId: req.user.id,
-                // problemId: req.Problem.id, <-- Note: I left this from your original code, but ensure 'req.Problem' exists!
             }
         });
 
         return res.status(200).json({
-            sucess: true,
-            message: "Problem updated successfully", // fixed typo from created to updated
+            success: true,
+            message: "Problem updated successfully", 
             problem: updatedProblem,
         });
+
     } catch (error) {
+        if (error.status === 400) {
+            return res.status(400).json({ error: error.message });
+        }
         console.log("error----->", error.response ? error.response.data : error.message);
-        return res.status(500).json({
-            error: "error while updating problem"
-        });
+        return res.status(500).json({ error: "Internal server error while updating problem" });
     }
 };
-
-// --- DB ONLY CONTROLLERS (NO CHANGES MADE BELOW HERE) ---
 
 export const getAllProblem = async (req, res) => {
     try {
@@ -158,7 +83,7 @@ export const getAllProblem = async (req, res) => {
             }
         });
         if (!problems) {
-            return res.status(404).json({ message: "No problems found" }); // Added return here so it doesn't crash
+            return res.status(404).json({ message: "No problems found" }); 
         }
         return res.status(200).json({
             sucess: true,

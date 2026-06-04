@@ -1,5 +1,5 @@
 import  { useEffect } from "react";
-import { useProblemStore } from "../store/problemStore";
+import { useProblemStore } from "../store/useProblemStore.js";
 import { useAuthStore } from "../store/authStore";
 import { useNavigate,Link } from "react-router-dom";
 import { Loader ,LogOut,Plus,Terminal,Shield} from "lucide-react";

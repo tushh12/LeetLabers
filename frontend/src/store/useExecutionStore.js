@@ -10,9 +10,9 @@ export const useExecutionStore = create((set) => ({
     executeCode : async(payload) => {
         try {
             set({isExecuting:true});
-            const res = await axiosInstance.post("/problems/execute",payload);
+            const res = await axiosInstance.post("/execute-code",payload);
 
-            set({executionResult:res.data.submissions});
+            set({executionResult:res.data.submission});
             toast.success("Exection Complete");
             return res.data.submissions
         } catch(error){
