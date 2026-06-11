@@ -7,7 +7,7 @@ import Login from "./pages/Login.jsx"
 import CreateProblem from "./pages/CreateProblem.jsx"
 import WorkSpace from "./pages/Workspace.jsx"
 import SignUp from "./pages/SignUp.jsx"
-import { useAuthStore } from "./store/authStore.js";
+import { useAuthStore } from "./store/useAuthStore.js";
 import {  Loader } from "lucide-react";
 
 
