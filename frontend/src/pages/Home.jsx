@@ -1,6 +1,6 @@
 import  { useEffect } from "react";
 import { useProblemStore } from "../store/useProblemStore.js";
-import { useAuthStore } from "../store/authStore";
+import { useAuthStore } from "../store/useAuthStore.js";
 import { useNavigate,Link } from "react-router-dom";
 import { Loader ,LogOut,Plus,Terminal,Shield} from "lucide-react";
 import ProblemsTable from "../components/ProblemsTable";

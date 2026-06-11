@@ -1,5 +1,5 @@
 import  { useState, useMemo } from "react";
-import { useAuthStore } from "../store/authStore";
+import { useAuthStore } from "../store/useAuthStore.js";
 import { Link } from "react-router-dom";
 import { Bookmark, PencilIcon, TrashIcon, Plus } from "lucide-react";
 import { useActions } from "../store/useActions";

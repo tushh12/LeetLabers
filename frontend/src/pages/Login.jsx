@@ -1,5 +1,5 @@
 import { useState } from "react";
-import {useAuthStore} from "../store/authStore";
+import {useAuthStore} from "../store/useAuthStore.js";
 import  {useNavigate,Link}  from "react-router-dom";
 import {Mail,Lock,LogIn} from "lucide-react"
 
