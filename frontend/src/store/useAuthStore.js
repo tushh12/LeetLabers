@@ -20,7 +20,7 @@ export const useAuthStore = create((set) => ({
             set({isCheckingAuth:false})
         }
     },
-    singup: async(name,email,password) => {
+    signup: async(name,email,password) => {
         set({isLoading:true,error:null});
         try {
             const response = await axiosInstance.post("/auth/register",{name,email,password});
