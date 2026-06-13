@@ -156,7 +156,7 @@ const CreateProblemForm = () => {
               <Settings className="w-5 h-5" />
             </div>
             <div>
-              <h2 className="text-lg font-black text-white tracking-tight">Challenge Management Console</h2>
+              <h2 className="text-lg font-black text-white tracking-tight">Create Problem</h2>
               <p className="text-[10px] text-gray-400 font-medium">Design structured code parameters inside single workspace frame matrix elements</p>
             </div>
           </div>
