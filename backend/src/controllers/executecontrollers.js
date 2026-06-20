@@ -33,7 +33,6 @@ export const executeCode = async (req, res) => {
             return res.status(400).json({ error: "Unsupported language ID" });
         }
 
-        // ✅ NEW: Fetch the problem from the DB to get the specific driver code!
         const problem = await db.Problem.findUnique({
             where: { id: problemId }
         });
@@ -45,16 +44,15 @@ export const executeCode = async (req, res) => {
         const clientId = process.env.JDOODLE_CLIENT_ID;
         const clientSecret = process.env.JDOODLE_CLIENT_SECRET;
 
-        // ✅ NEW: Get the driver code dynamically and stitch it!
-        // We use the language_id string (e.g. 'javascript') to pull the correct hidden driver
-        const langKey = String(language_id).toLowerCase();
+        // ✅ FIX 1: Converted to UPPERCASE to match how the UI saves the driver in your JSON DB
+        const langKey = String(language_id).toUpperCase();
         const specificDriverCode = problem.driverCode[langKey] || ""; 
         const finalScript = `${source_code}\n\n${specificDriverCode}`;
 
         const executionPromises = stdin.map(async (input) => {
             try {
                 const response = await axios.post('https://api.jdoodle.com/v1/execute', {
-                    script: finalScript, // ✅ NEW: Sending the combined dynamic script!
+                    script: finalScript, 
                     language: jdoodleConfig.language,
                     versionIndex: jdoodleConfig.versionIndex,
                     stdin: input,
@@ -147,3 +145,66 @@ export const executeCode = async (req, res) => {
         res.status(500).json({ error: "Failed to execute code" });
     }
 };
+
+export const getAllSubmission = async(req,res) => {
+    try {
+        const userId = req.user.id;
+
+        // ✅ FIX 2: db.submission (singular) to match Prisma Schema
+        const submissions = await db.submission.findMany({
+            where:{
+                userId:userId
+            }
+        })
+        res.status(200).json({
+            success:true,
+            message:"Submissions fetched successfully",
+            submissions
+        })
+    } catch (error) {
+        console.error("fetch Submissions error",error);
+        res.status(500).json({error:"failed to fetch submissions"})
+    }
+}
+
+export const getSubmissonsForProblem = async(req,res) => {
+    try {
+        const userId = req.user.id;
+        const problemId = req.params.problemId;
+
+        // ✅ FIX 3: db.submission (singular) to match Prisma Schema
+        const submissions = await db.submission.findMany({
+            where:{
+                userId:userId,
+                problemId:problemId
+            }
+        })
+        res.status(200).json({
+            success:true,
+            message:"Submissions fetched successfully",
+            submissions
+        })
+    } catch(error){
+            console.error("fetch submissions error",error);
+            res.status(500).json({error:"failed to fetch submissions"})
+    }
+}
+
+export const getAllTheSubmissionsForProblem = async(req,res) => {
+    try {
+        const problemId = req.params.problemId;
+        const submissionCount = await db.submission.count({
+            where:{
+                problemId:problemId
+            }
+        })
+        res.status(200).json({
+            success:true,
+            message:"Submissions fetched successfully",
+            count:submissionCount
+        })
+    } catch(error){
+        console.error("fetched submissions error",error);
+        res.status(500).json({error:"failed to fetch submissions "})
+    }
+}
