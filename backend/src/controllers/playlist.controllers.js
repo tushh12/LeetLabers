@@ -110,7 +110,7 @@ export const deletePlaylist = async(req,res) => {
     try {
         const deletedplaylist = await db.Playlist.delete({
             where:{
-                id:playListId,
+                id:playlistId,
             },
         });
         res.status(200).json({
@@ -124,7 +124,7 @@ export const deletePlaylist = async(req,res) => {
     }
 };
 export  const removeProblemFromPlaylist = async(req,res) => {
-    const {playListId} = req.params;
+    const {playlistId} = req.params;
     const {problemIds} =  req.body;
     try{
         if(!Array.isArray(problemIds) || problemIds.length === 0){
@@ -133,7 +133,7 @@ export  const removeProblemFromPlaylist = async(req,res) => {
         }
         const deletedProblem = await db.ProblemInPlaylist.deleteMany({
             where:{
-                playListId,
+                playlistId,
                 problemId:{
                     in:problemIds,
                 },
