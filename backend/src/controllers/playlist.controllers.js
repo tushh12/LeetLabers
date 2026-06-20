@@ -4,7 +4,7 @@ export const createPlayList = async (req,res) => {
     try {
         const {name,description} = req.body;
         const userId = req.user.id;
-        const playList = await db.Playlist.create({
+        const playlist = await db.Playlist.create({
             data:{
                 name,
                 description,
@@ -14,7 +14,7 @@ export const createPlayList = async (req,res) => {
         res.status(200).json({
             success:true,
             message:"Playlist created successfully",
-            playList
+            playlist
         })
     } catch (error){
         console.error("errror creating playlist ",error);
@@ -47,7 +47,7 @@ export const getPlayAllListDetails = async (req,res) => {
     }
 }
 export const getPlayListDetails =  async(req,res) => {
-    const {playListId} = req.params;
+    const {playlistId} = req.params;
 
     try {
         const playList = await db.Playlist.findUnique({
@@ -106,7 +106,7 @@ export const addProblemToPlaylist = async(req,res) => {
     }
 }
 export const deletePlaylist = async(req,res) => {
-    const {playListId} = req.params;
+    const {playlistId} = req.params;
     try {
         const deletedplaylist = await db.Playlist.delete({
             where:{
