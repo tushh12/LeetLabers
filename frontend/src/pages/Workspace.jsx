@@ -21,8 +21,7 @@ const ProblemPage = () => {
   // -- Stores --
   const { getProblemById, problem, isProblemLoading } = useProblemStore();
   const {
-    submission: submissions, 
-    isLoading: isSubmissionsLoading,
+    currentSubmission,
     getSubmissionForProblem,
     getSubmissionCountForProblem,
     submissionCount,
@@ -144,7 +143,12 @@ setCode(problem.codeSnippets?.[selectedLanguage] || executionResult?.sourceCode 
           </div>
         );
       case "submissions":
-        return <SubmissionsList submissions={submissions} isLoading={isSubmissionsLoading} />;
+        // ✅ NEW: If a submission is clicked, show details. Otherwise, show the list.
+        return currentSubmission ? (
+          <Submission />
+        ) : (
+          <SubmissionsList problemId={id} /> 
+        );
       case "discussion":
         return <div className="text-center text-base-content/50 py-10">No discussions yet</div>;
       case "hints":
@@ -332,7 +336,7 @@ setCode(problem.codeSnippets?.[selectedLanguage] || executionResult?.sourceCode 
                     </div>
                   ) : executionResult ? (
                     <div className="animate-in fade-in duration-300">
-                      <Submission submission={executionResult} />
+                      <Submission submissionProp={executionResult} />
                     </div>
                   ) : (
                     <div className="text-sm font-medium text-base-content/50 pt-2">
