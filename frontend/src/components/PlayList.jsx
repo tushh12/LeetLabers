@@ -34,7 +34,7 @@ const handleDelete  = async(e, playlistIds) => {
                 {playlists.map((playlist) => (
                     <div 
                       key={playlist.id}
-                      className="grooup relative flex items-center justify-between p-4 bg-gray-900/40 backdrop-blur-sm border border-gray-800/60 rounded-xl hover:border-gray-700/80 transition-all duration-200"
+                      className="group relative flex items-center justify-between p-4 bg-gray-900/40 backdrop-blur-sm border border-gray-800/60 rounded-xl hover:border-gray-700/80 transition-all duration-200"
                       >
                         {/* Left side : folder icon and playlist info */}
                         <div className="flex items-center gap-3 min-w-0">
@@ -51,7 +51,7 @@ const handleDelete  = async(e, playlistIds) => {
                         {/* Right Side : Action Delete Button (visible always on mobile , reveals smoothly on desktop hover) */}
                         <button 
                         onClick={(e) => handleDelete(e,playlist.id)}
-                        className="p-2 text-gray-400 hover:text-red-400 bg-gray-950/40 hover:bg-red-600/10 border border-gray-800 hover:border-red-500/20 rounded-lg transition-all md:opacity-0 group-bover:opacity-100 flex-shrink-0"
+                        className="p-2 text-gray-400 hover:text-red-400 bg-gray-950/40 hover:bg-red-600/10 border border-gray-800 hover:border-red-500/20 rounded-lg transition-all md:opacity-0 group-hover:opacity-100 flex-shrink-0"
                         title="Delete Playlist"
                         >
                         <TrashIcon className="w-4 h-4"/>
